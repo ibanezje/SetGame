@@ -154,7 +154,7 @@ export default function Card({ card, selected, highlighted, invalid, onClick, di
 
       {/* Symbols */}
       {yPositions.map((yOff, idx) => (
-        <g key={idx} transform={`translate(${cardW / 2}, ${cardH / 2 + yOff}) scale(${scale})`}>
+        <g key={idx} transform={`translate(${cardW / 2}, ${cardH / 2 + yOff}) rotate(90) scale(${scale})`}>
           <Symbol
             shape={shape}
             color={color}

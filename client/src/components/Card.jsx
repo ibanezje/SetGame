@@ -49,8 +49,8 @@ const SHAPE_COMPONENTS = {
 
 const SYMBOL_Y = {
   1: [0],
-  2: [-52, 52],
-  3: [-104, 0, 104]
+  2: [-39, 39],
+  3: [-78, 0, 78]
 };
 
 // ─── Individual symbol ────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export default function Card({ card, selected, highlighted, invalid, onClick, di
   const patternId = `stripe-${color}`;
 
   const cardW = 200;
-  const cardH = 310;
+  const cardH = 232;
 
   const yPositions = SYMBOL_Y[number];
 

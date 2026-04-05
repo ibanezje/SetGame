@@ -222,7 +222,7 @@ io.on('connection', socket => {
       if (deckEmpty && !hasMoreSets) {
         room.state = 'finished';
         clearHintTimer(room);
-        io.to(room.code).emit('game_over', { players: room.players });
+        io.to(room.code).emit('game_over', { players: room.players, removedCardIds: cardIds });
       } else {
         io.to(room.code).emit('set_valid', {
           removedCardIds: cardIds,

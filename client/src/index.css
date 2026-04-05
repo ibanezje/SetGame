@@ -544,6 +544,7 @@ html, body, #root {
 
 .card-new {
   animation: card-wiggle 0.5s ease-in-out;
+  overflow: visible;
 }
 
 /* ─── Utility ────────────────────────────────────────────────────────────────── */

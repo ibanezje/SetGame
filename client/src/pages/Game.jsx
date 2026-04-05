@@ -96,15 +96,20 @@ export default function Game({
           el.style.transition = `transform ${slideDurationS}s ease-in-out`;
           el.style.transform  = '';
           // Clean up inline styles once the transition finishes
-          el.addEventListener('transitionend', () => {
+          const onTransitionEnd = (e) => {
+            if (e.propertyName !== 'transform') return;
+            el.removeEventListener('transitionend', onTransitionEnd);
             el.style.transition = '';
             el.style.transform  = '';
-          }, { once: true });
+          };
+          el.addEventListener('transitionend', onTransitionEnd);
         }
       } else {
         // New card — wiggle
         el.classList.add('card-new');
-        setTimeout(() => el.classList.remove('card-new'), 600);
+        setTimeout(() => {
+          if (cardRefs.current[card.id] === el) el.classList.remove('card-new');
+        }, 600); // 600 > 500ms animation, intentional buffer
       }
     });
 
@@ -115,8 +120,8 @@ export default function Game({
       if (el) prevPositionsRef.current[card.id] = el.getBoundingClientRect();
     });
   }, [board]); // eslint-disable-line react-hooks/exhaustive-deps
-  // settings.slideDuration intentionally omitted — stale value on change is acceptable
-  // and including it would trigger spurious FLIP runs
+  // settings.slideDuration intentionally omitted: including it would re-run FLIP on every slider
+  // change. Using a one-render-stale duration on the first SET after a slider move is acceptable.
 
   function toggleCard(cardId) {
     if (!isClaiming) return;

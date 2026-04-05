@@ -98,6 +98,30 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
               <span className="setting-value">{hintLabel}</span>
             </div>
           </div>
+
+          <div className="setting-row">
+            <label>Card flash</label>
+            <div className="setting-control">
+              <input
+                type="range" min={1} max={5} step={0.5}
+                value={room.settings.flashDuration}
+                onChange={e => onUpdateSettings({ flashDuration: Number(e.target.value) })}
+              />
+              <span className="setting-value">{room.settings.flashDuration}s</span>
+            </div>
+          </div>
+
+          <div className="setting-row">
+            <label>Card slide</label>
+            <div className="setting-control">
+              <input
+                type="range" min={0.2} max={3} step={0.1}
+                value={room.settings.slideDuration}
+                onChange={e => onUpdateSettings({ slideDuration: Number(e.target.value) })}
+              />
+              <span className="setting-value">{room.settings.slideDuration}s</span>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="section settings-panel read-only">
@@ -105,6 +129,8 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
           <p>Thinking time: <strong>{room.settings.thinkingTime}s</strong></p>
           <p>Penalty: <strong>{room.settings.penaltyEnabled ? '−5 pts enabled' : 'disabled'}</strong></p>
           <p>Hint card: <strong>{hintLabel}</strong></p>
+          <p>Card flash: <strong>{room.settings.flashDuration}s</strong></p>
+          <p>Card slide: <strong>{room.settings.slideDuration}s</strong></p>
         </div>
       )}
 

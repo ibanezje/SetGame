@@ -9,23 +9,18 @@ export default function App() {
   const [screen,        setScreen]        = useState('home');
   const [room,          setRoom]          = useState(null);
   const [myId,          setMyId]          = useState(null);
-  const [hintCardIndex, setHintCardIndex] = useState(null);
+  const [hintCardId, setHintCardId] = useState(null);
   const [notification,  setNotification]  = useState(null); // { message, type, flashIndices? }
   const [connError,     setConnError]     = useState('');
 
   const notifTimer  = useRef(null);
   const flashTimer  = useRef(null);
+  const pendingBoard = useRef(null);
 
   function showNotification(message, type = 'info', flashIndices = null, duration = 2500) {
     if (notifTimer.current) clearTimeout(notifTimer.current);
     setNotification({ message, type, flashIndices });
     notifTimer.current = setTimeout(() => setNotification(null), duration);
-  }
-
-  function triggerFlash(indices, type) {
-    if (flashTimer.current) clearTimeout(flashTimer.current);
-    setNotification(prev => ({ ...prev, flashIndices: { indices, type } }));
-    flashTimer.current = setTimeout(() => setNotification(prev => prev ? { ...prev, flashIndices: null } : null), 800);
   }
 
   // ── Pull room code from URL on load ───────────────────────────────────────
@@ -52,14 +47,14 @@ export default function App() {
 
     socket.on('room_updated', (updatedRoom) => {
       setRoom(updatedRoom);
-      setHintCardIndex(null);
+      setHintCardId(null);
       if (updatedRoom.state === 'lobby')    setScreen('lobby');
       if (updatedRoom.state === 'finished') setScreen('results');
     });
 
     socket.on('game_started', (data) => {
       setRoom(data);
-      setHintCardIndex(null);
+      setHintCardId(null);
       setNotification(null);
       setScreen('game');
       if (data.boardExpanded > 0) {
@@ -68,7 +63,7 @@ export default function App() {
     });
 
     socket.on('set_claimed', ({ claimingPlayerId }) => {
-      setHintCardIndex(null); // hide hint while someone is thinking
+      setHintCardId(null); // hide hint while someone is thinking
       setRoom(prev => prev ? { ...prev, claimingPlayerId } : prev);
     });
 
@@ -85,32 +80,47 @@ export default function App() {
       setRoom(prev => prev ? { ...prev, claimingPlayerId: null } : prev);
     });
 
-    socket.on('set_valid', ({ indices, players, board, deckSize, boardExpanded }) => {
-      setRoom(prev => prev ? { ...prev, players, board, deckSize, claimingPlayerId: null } : prev);
-      setHintCardIndex(null);
-      triggerFlash(indices, 'valid');
+    socket.on('set_valid', ({ removedCardIds, players, board, deckSize, boardExpanded }) => {
+      // Update scores and clear claim immediately
+      setRoom(prev => prev ? { ...prev, players, deckSize, claimingPlayerId: null } : prev);
+      setHintCardId(null);
+
+      // Store the new board for delayed swap
+      pendingBoard.current = board;
+
+      // Flash the removed cards by ID on the current board
+      setNotification(prev => ({ ...prev, flashIndices: { ids: removedCardIds, type: 'valid' } }));
+
+      // After flash duration, swap in the new board
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => {
+        setRoom(prev => prev ? { ...prev, board: pendingBoard.current } : prev);
+        pendingBoard.current = null;
+        setNotification(prev => prev ? { ...prev, flashIndices: null } : null);
+      }, 800);
+
       if (boardExpanded > 0) {
         setTimeout(() => showNotification(`No SET at 12 — ${boardExpanded} more cards dealt!`, 'warning'), 900);
       }
     });
 
-    socket.on('set_invalid', ({ indices, players, penaltyApplied }) => {
+    socket.on('set_invalid', ({ cardIds, players, penaltyApplied }) => {
       setRoom(prev => prev ? { ...prev, players, claimingPlayerId: null } : prev);
-      triggerFlash(indices, 'invalid');
+      setNotification(prev => ({ ...prev, flashIndices: { ids: cardIds, type: 'invalid' } }));
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setNotification(prev => prev ? { ...prev, flashIndices: null } : null), 800);
       if (penaltyApplied) {
-        showNotification('✗ Not a SET  (−5 pts)', 'error');
+        showNotification('\u2717 Not a SET  (\u22125 pts)', 'error');
       } else {
-        showNotification('✗ Not a SET', 'error');
+        showNotification('\u2717 Not a SET', 'error');
       }
     });
 
-    socket.on('hint_card', ({ cardIndex }) => {
-      setHintCardIndex(cardIndex);
-    });
+    socket.on('hint_card', ({ cardId }) => { setHintCardId(cardId); });
 
     socket.on('game_over', ({ players, reason }) => {
       setRoom(prev => prev ? { ...prev, players, state: 'finished', claimingPlayerId: null } : prev);
-      setHintCardIndex(null);
+      setHintCardId(null);
       setNotification(null);
       setScreen('results');
     });
@@ -146,8 +156,8 @@ export default function App() {
     socket.emit('claim_set');
   }
 
-  function handleSubmitSet(indices) {
-    socket.emit('submit_set', { indices });
+  function handleSubmitSet(cardIds) {
+    socket.emit('submit_set', { cardIds });
   }
 
   function handleCancelClaim() {
@@ -170,7 +180,7 @@ export default function App() {
     socket.disconnect();
     socket.connect();
     setRoom(null);
-    setHintCardIndex(null);
+    setHintCardId(null);
     setNotification(null);
     setScreen('home');
   }
@@ -204,7 +214,7 @@ export default function App() {
           myId={myId}
           claimingPlayerId={room.claimingPlayerId}
           settings={room.settings}
-          hintCardIndex={hintCardIndex}
+          hintCardId={hintCardId}
           notification={notification}
           isHost={isHost}
           onClaimSet={handleClaimSet}

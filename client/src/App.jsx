@@ -49,8 +49,12 @@ export default function App() {
     socket.on('room_updated', (updatedRoom) => {
       setRoom(updatedRoom);
       setHintCardId(null);
-      if (updatedRoom.state === 'lobby')    setScreen('lobby');
-      if (updatedRoom.state === 'finished') setScreen('results');
+      if (updatedRoom.state === 'lobby') setScreen('lobby');
+      if (updatedRoom.state === 'finished') {
+        if (flashTimer.current) { clearTimeout(flashTimer.current); flashTimer.current = null; }
+        setNotification(null);
+        setScreen('results');
+      }
     });
 
     socket.on('game_started', (data) => {
@@ -82,13 +86,17 @@ export default function App() {
     });
 
     socket.on('set_valid', ({ removedCardIds, players, board, deckSize, boardExpanded }) => {
+      // Update scores and clear claim immediately
       setRoom(prev => prev ? { ...prev, players, deckSize, claimingPlayerId: null } : prev);
       setHintCardId(null);
 
+      // Store the new board for delayed swap
       pendingBoard.current = board;
 
+      // Flash the removed cards green on the current board
       setNotification(prev => ({ ...prev, flashIndices: { ids: removedCardIds, type: 'valid' } }));
 
+      // After flash duration, swap in the new board
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => {
         setRoom(prev => prev ? { ...prev, board: pendingBoard.current } : prev);

@@ -16,6 +16,7 @@ export default function App() {
   const notifTimer  = useRef(null);
   const flashTimer  = useRef(null);
   const pendingBoard = useRef(null);
+  const settingsRef  = useRef({ thinkingTime: 10, penaltyEnabled: true, hintDelay: 20, flashDuration: 3, slideDuration: 1 });
 
   function showNotification(message, type = 'info', flashIndices = null, duration = 2500) {
     if (notifTimer.current) clearTimeout(notifTimer.current);
@@ -81,26 +82,22 @@ export default function App() {
     });
 
     socket.on('set_valid', ({ removedCardIds, players, board, deckSize, boardExpanded }) => {
-      // Update scores and clear claim immediately
       setRoom(prev => prev ? { ...prev, players, deckSize, claimingPlayerId: null } : prev);
       setHintCardId(null);
 
-      // Store the new board for delayed swap
       pendingBoard.current = board;
 
-      // Flash the removed cards by ID on the current board
       setNotification(prev => ({ ...prev, flashIndices: { ids: removedCardIds, type: 'valid' } }));
 
-      // After flash duration, swap in the new board
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => {
         setRoom(prev => prev ? { ...prev, board: pendingBoard.current } : prev);
         pendingBoard.current = null;
         setNotification(prev => prev ? { ...prev, flashIndices: null } : null);
-      }, 800);
+      }, settingsRef.current.flashDuration * 1000);
 
       if (boardExpanded > 0) {
-        setTimeout(() => showNotification(`No SET at 12 — ${boardExpanded} more cards dealt!`, 'warning'), 900);
+        setTimeout(() => showNotification(`No SET at 12 — ${boardExpanded} more cards dealt!`, 'warning'), settingsRef.current.flashDuration * 1000 + 100);
       }
     });
 
@@ -118,15 +115,36 @@ export default function App() {
 
     socket.on('hint_card', ({ cardId }) => { setHintCardId(cardId); });
 
-    socket.on('game_over', ({ players, reason }) => {
+    socket.on('game_over', ({ players, reason, removedCardIds }) => {
       setRoom(prev => prev ? { ...prev, players, state: 'finished', claimingPlayerId: null } : prev);
       setHintCardId(null);
-      setNotification(null);
-      setScreen('results');
+
+      if (removedCardIds?.length) {
+        // Natural end: flash the last SET green, then navigate to results
+        const flashMs = settingsRef.current.flashDuration * 1000;
+        setNotification({
+          message: 'No more SETs — game over!',
+          type: 'info',
+          flashIndices: { ids: removedCardIds, type: 'valid' }
+        });
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        flashTimer.current = setTimeout(() => {
+          setNotification(null);
+          setScreen('results');
+        }, flashMs);
+      } else {
+        // Host ended early or not enough players — navigate immediately
+        setNotification(null);
+        setScreen('results');
+      }
     });
 
     return () => { socket.disconnect(); socket.removeAllListeners(); };
   }, []);
+
+  useEffect(() => {
+    if (room?.settings) settingsRef.current = room.settings;
+  }, [room?.settings]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 

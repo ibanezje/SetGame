@@ -15,7 +15,7 @@ function createDeck() {
     for (const color of COLORS)
       for (const shape of SHAPES)
         for (const shading of SHADINGS)
-          deck.push({ number, color, shape, shading });
+          deck.push({ id: `${number}-${color}-${shape}-${shading}`, number, color, shape, shading });
 
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

@@ -8,7 +8,7 @@ export default function Game({
   myId,
   claimingPlayerId,
   settings,
-  hintCardIndex,      // index on board to subtly highlight, or null
+  hintCardId,         // card ID to subtly highlight, or null
   notification,       // { message, type } | null  – toast from parent
   onClaimSet,
   onSubmitSet,
@@ -58,12 +58,12 @@ export default function Game({
     }
   }, [selected, isClaiming, onSubmitSet]);
 
-  function toggleCard(idx) {
+  function toggleCard(cardId) {
     if (!isClaiming) return;
     setSelected(prev =>
-      prev.includes(idx)
-        ? prev.filter(i => i !== idx)
-        : prev.length < 3 ? [...prev, idx] : prev
+      prev.includes(cardId)
+        ? prev.filter(id => id !== cardId)
+        : prev.length < 3 ? [...prev, cardId] : prev
     );
   }
 
@@ -143,21 +143,21 @@ export default function Game({
 
       {/* ── Card grid ── */}
       <div className="card-grid" style={{ '--cols': board.length > 12 ? 4 : 3 }}>
-        {board.map((card, idx) => {
-          const isSelected    = selected.includes(idx);
-          const isHighlighted = notification?.flashIndices?.type === 'valid'   && notification?.flashIndices?.indices?.includes(idx);
-          const isInvalid     = notification?.flashIndices?.type === 'invalid' && notification?.flashIndices?.indices?.includes(idx);
-          const isHint        = hintCardIndex === idx && !isSelected && !claimingPlayerId;
+        {board.map((card) => {
+          const isSelected    = selected.includes(card.id);
+          const isHighlighted = notification?.flashIndices?.type === 'valid'   && notification?.flashIndices?.ids?.includes(card.id);
+          const isInvalid     = notification?.flashIndices?.type === 'invalid' && notification?.flashIndices?.ids?.includes(card.id);
+          const isHint        = hintCardId === card.id && !isSelected && !claimingPlayerId;
           const isDisabled    = !isClaiming;
 
           return (
-            <div key={idx} className={`card-cell ${isHint ? 'card-hint' : ''}`}>
+            <div key={card.id} className={`card-cell ${isHint ? 'card-hint' : ''}`}>
               <Card
                 card={card}
                 selected={isSelected}
                 highlighted={isHighlighted}
                 invalid={isInvalid}
-                onClick={() => toggleCard(idx)}
+                onClick={() => toggleCard(card.id)}
                 disabled={isDisabled}
               />
             </div>

@@ -33,7 +33,9 @@ function makeRoom(hostId, hostName) {
     settings: {
       thinkingTime: 10,
       penaltyEnabled: true,
-      hintDelay: 20      // seconds before a hint card is revealed (0 = disabled)
+      hintDelay: 20,      // seconds before a hint card is revealed (0 = disabled)
+      flashDuration: 3,   // seconds — green flash after a valid SET
+      slideDuration: 1    // seconds — card slide animation after board swap
     },
     state: 'lobby',
     deck: [],
@@ -116,14 +118,16 @@ io.on('connection', socket => {
   });
 
   // ── Update settings (host only) ───────────────────────────────────────────
-  socket.on('update_settings', ({ thinkingTime, penaltyEnabled, hintDelay }) => {
+  socket.on('update_settings', ({ thinkingTime, penaltyEnabled, hintDelay, flashDuration, slideDuration }) => {
     const room = findRoomBySocket(socket.id);
     if (!room) return;
     const player = room.players.find(p => p.id === socket.id);
     if (!player?.isHost) return;
-    if (typeof thinkingTime    === 'number') room.settings.thinkingTime   = Math.min(60, Math.max(3, thinkingTime));
+    if (typeof thinkingTime    === 'number') room.settings.thinkingTime   = Math.min(60,  Math.max(3,   thinkingTime));
     if (typeof penaltyEnabled  === 'boolean') room.settings.penaltyEnabled = penaltyEnabled;
-    if (typeof hintDelay       === 'number') room.settings.hintDelay      = Math.min(120, Math.max(0, hintDelay));
+    if (typeof hintDelay       === 'number') room.settings.hintDelay      = Math.min(120, Math.max(0,   hintDelay));
+    if (typeof flashDuration   === 'number') room.settings.flashDuration  = Math.min(5,   Math.max(1,   flashDuration));
+    if (typeof slideDuration   === 'number') room.settings.slideDuration  = Math.min(3,   Math.max(0.2, slideDuration));
     io.to(room.code).emit('room_updated', roomPublic(room));
   });
 

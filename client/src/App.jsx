@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { socket, emitWithAck } from './socket';
 import Home    from './pages/Home';
 import Lobby   from './pages/Lobby';
@@ -156,9 +156,9 @@ export default function App() {
     socket.emit('claim_set');
   }
 
-  function handleSubmitSet(cardIds) {
+  const handleSubmitSet = useCallback((cardIds) => {
     socket.emit('submit_set', { cardIds });
-  }
+  }, []);
 
   function handleCancelClaim() {
     socket.emit('cancel_claim');

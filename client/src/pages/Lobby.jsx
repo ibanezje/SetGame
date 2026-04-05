@@ -107,7 +107,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
                 value={room.settings.flashDuration}
                 onChange={e => onUpdateSettings({ flashDuration: Number(e.target.value) })}
               />
-              <span className="setting-value">{room.settings.flashDuration}s</span>
+              <span className="setting-value">{room.settings.flashDuration.toFixed(1)}s</span>
             </div>
           </div>
 
@@ -129,7 +129,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
           <p>Thinking time: <strong>{room.settings.thinkingTime}s</strong></p>
           <p>Penalty: <strong>{room.settings.penaltyEnabled ? '−5 pts enabled' : 'disabled'}</strong></p>
           <p>Hint card: <strong>{hintLabel}</strong></p>
-          <p>Card flash: <strong>{room.settings.flashDuration}s</strong></p>
+          <p>Card flash: <strong>{room.settings.flashDuration.toFixed(1)}s</strong></p>
           <p>Card slide: <strong>{room.settings.slideDuration.toFixed(1)}s</strong></p>
         </div>
       )}

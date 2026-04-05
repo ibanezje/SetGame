@@ -64,6 +64,8 @@ export default function Game({
 
   // ── FLIP slide animation + wiggle for new cards ──────────────────────────
   useLayoutEffect(() => {
+    // Runs after each board change. The board swap is always delayed by flashDuration
+    // in App.jsx (set_valid / game_over), so this fires after the flash — never during it.
     if (!isMountedRef.current) {
       // First mount — snapshot positions only, no animation
       isMountedRef.current = true;
@@ -74,6 +76,7 @@ export default function Game({
       return;
     }
 
+    const wiggleTimers = [];
     const slideDurationS = settings.slideDuration ?? 1;
 
     board.forEach(card => {
@@ -89,6 +92,7 @@ export default function Game({
         const dy = prevRect.top  - newRect.top;
 
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          el.style.overflow   = 'visible'; // allow slide past grid cell boundary
           el.style.transition = 'none';
           el.style.transform  = `translate(${dx}px, ${dy}px)`;
           // Force reflow so the browser registers the starting position
@@ -99,6 +103,7 @@ export default function Game({
           const onTransitionEnd = (e) => {
             if (e.propertyName !== 'transform') return;
             el.removeEventListener('transitionend', onTransitionEnd);
+            el.style.overflow   = '';
             el.style.transition = '';
             el.style.transform  = '';
           };
@@ -107,9 +112,9 @@ export default function Game({
       } else {
         // New card — wiggle
         el.classList.add('card-new');
-        setTimeout(() => {
+        wiggleTimers.push(setTimeout(() => {
           if (cardRefs.current[card.id] === el) el.classList.remove('card-new');
-        }, 600); // 600 > 500ms animation, intentional buffer
+        }, 600)); // 600 > 500ms animation, intentional buffer
       }
     });
 
@@ -119,6 +124,8 @@ export default function Game({
       const el = cardRefs.current[card.id];
       if (el) prevPositionsRef.current[card.id] = el.getBoundingClientRect();
     });
+
+    return () => wiggleTimers.forEach(clearTimeout);
   }, [board]); // eslint-disable-line react-hooks/exhaustive-deps
   // settings.slideDuration intentionally omitted: including it would re-run FLIP on every slider
   // change. Using a one-render-stale duration on the first SET after a slider move is acceptable.

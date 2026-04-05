@@ -142,3 +142,73 @@ describe('refillAfterSet', () => {
     assert.equal(new Set(ids).size, ids.length, 'No duplicate IDs after refill');
   });
 });
+
+describe('multiplayer sync: remove by ID and refill', () => {
+  it('removed card IDs never reappear on board after refill', () => {
+    const deck = createDeck();
+    const board = [];
+    dealCards(deck, board);
+
+    const sets = findAllSets(board);
+    if (sets.length === 0) return;
+
+    const [i, j, k] = sets[0];
+    const removedIds = [board[i].id, board[j].id, board[k].id];
+    const boardSizeBefore = board.length;
+    const remaining = board.filter(c => !removedIds.includes(c.id));
+    board.length = 0;
+    remaining.forEach(c => board.push(c));
+
+    refillAfterSet(deck, board, boardSizeBefore);
+
+    for (const card of board) {
+      assert.ok(!removedIds.includes(card.id), `Removed card ${card.id} should not reappear`);
+    }
+  });
+
+  it('full game simulation: board integrity at every step', () => {
+    const deck = createDeck();
+    const board = [];
+    const allRemovedIds = [];
+
+    dealCards(deck, board);
+
+    let rounds = 0;
+    while (true) {
+      const boardIds = board.map(c => c.id);
+      assert.equal(new Set(boardIds).size, boardIds.length, `Round ${rounds}: duplicate IDs on board`);
+
+      for (const id of boardIds) {
+        assert.ok(!allRemovedIds.includes(id), `Round ${rounds}: removed card ${id} reappeared`);
+      }
+
+      const sets = findAllSets(board);
+      if (sets.length === 0) break;
+
+      const [i, j, k] = sets[0];
+      const removedIds = [board[i].id, board[j].id, board[k].id];
+      allRemovedIds.push(...removedIds);
+
+      const boardSizeBefore = board.length;
+      const remaining = board.filter(c => !removedIds.includes(c.id));
+      board.length = 0;
+      remaining.forEach(c => board.push(c));
+
+      refillAfterSet(deck, board, boardSizeBefore);
+      rounds++;
+    }
+
+    const totalAccountedFor = allRemovedIds.length + board.length + deck.length;
+    assert.equal(totalAccountedFor, 81, 'All 81 cards accounted for');
+  });
+
+  it('looking up a card ID not on the board returns undefined', () => {
+    const deck = createDeck();
+    const board = [];
+    dealCards(deck, board);
+
+    const fakeId = '9-pink-star-dotted';
+    const found = board.find(c => c.id === fakeId);
+    assert.equal(found, undefined);
+  });
+});

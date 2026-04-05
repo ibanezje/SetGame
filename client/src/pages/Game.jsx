@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import Card from '../components/Card';
 
 export default function Game({
@@ -22,6 +22,10 @@ export default function Game({
   const [menuOpen,     setMenuOpen]     = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // 'reset' | 'end' | null
   const timerRef = useRef(null);
+
+  const cardRefs        = useRef({});    // cardId → .card-cell DOM element
+  const prevPositionsRef = useRef({});   // cardId → DOMRect from previous board render
+  const isMountedRef    = useRef(false); // skip animation on first mount
 
   const isClaiming = claimingPlayerId === myId;
 
@@ -57,6 +61,62 @@ export default function Game({
       onSubmitSet(selected);
     }
   }, [selected, isClaiming, onSubmitSet]);
+
+  // ── FLIP slide animation + wiggle for new cards ──────────────────────────
+  useLayoutEffect(() => {
+    if (!isMountedRef.current) {
+      // First mount — snapshot positions only, no animation
+      isMountedRef.current = true;
+      board.forEach(card => {
+        const el = cardRefs.current[card.id];
+        if (el) prevPositionsRef.current[card.id] = el.getBoundingClientRect();
+      });
+      return;
+    }
+
+    const slideDurationS = settings.slideDuration ?? 1;
+
+    board.forEach(card => {
+      const el = cardRefs.current[card.id];
+      if (!el) return;
+
+      const newRect  = el.getBoundingClientRect();
+      const prevRect = prevPositionsRef.current[card.id];
+
+      if (prevRect) {
+        // Existing card — FLIP if it moved
+        const dx = prevRect.left - newRect.left;
+        const dy = prevRect.top  - newRect.top;
+
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          el.style.transition = 'none';
+          el.style.transform  = `translate(${dx}px, ${dy}px)`;
+          // Force reflow so the browser registers the starting position
+          void el.getBoundingClientRect();
+          el.style.transition = `transform ${slideDurationS}s ease-in-out`;
+          el.style.transform  = '';
+          // Clean up inline styles once the transition finishes
+          el.addEventListener('transitionend', () => {
+            el.style.transition = '';
+            el.style.transform  = '';
+          }, { once: true });
+        }
+      } else {
+        // New card — wiggle
+        el.classList.add('card-new');
+        setTimeout(() => el.classList.remove('card-new'), 600);
+      }
+    });
+
+    // Snapshot current positions for the next board change
+    prevPositionsRef.current = {};
+    board.forEach(card => {
+      const el = cardRefs.current[card.id];
+      if (el) prevPositionsRef.current[card.id] = el.getBoundingClientRect();
+    });
+  }, [board]); // eslint-disable-line react-hooks/exhaustive-deps
+  // settings.slideDuration intentionally omitted — stale value on change is acceptable
+  // and including it would trigger spurious FLIP runs
 
   function toggleCard(cardId) {
     if (!isClaiming) return;
@@ -151,7 +211,14 @@ export default function Game({
           const isDisabled    = !isClaiming;
 
           return (
-            <div key={card.id} className={`card-cell ${isHint ? 'card-hint' : ''}`}>
+            <div
+              key={card.id}
+              className={`card-cell ${isHint ? 'card-hint' : ''}`}
+              ref={el => {
+                if (el) cardRefs.current[card.id] = el;
+                else    delete cardRefs.current[card.id];
+              }}
+            >
               <Card
                 card={card}
                 selected={isSelected}

@@ -77,7 +77,7 @@ function startHintTimer(room) {
     const sets = findAllSets(room.board);
     if (sets.length === 0) return;
     // Reveal the first card of the first valid SET
-    io.to(room.code).emit('hint_card', { cardIndex: sets[0][0] });
+    io.to(room.code).emit('hint_card', { cardId: room.board[sets[0][0]].id });
   }, delay * 1000);
 }
 
@@ -191,24 +191,25 @@ io.on('connection', socket => {
   });
 
   // ── Submit SET ────────────────────────────────────────────────────────────
-  socket.on('submit_set', ({ indices }) => {
+  socket.on('submit_set', ({ cardIds }) => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.state !== 'playing') return;
     if (room.claimingPlayerId !== socket.id) return;
-    if (!Array.isArray(indices) || indices.length !== 3) return;
+    if (!Array.isArray(cardIds) || cardIds.length !== 3) return;
 
     clearClaim(room);
 
     const player = room.players.find(p => p.id === socket.id);
-    const [i, j, k] = indices;
-    const cards = [room.board[i], room.board[j], room.board[k]];
+    const cards = cardIds.map(id => room.board.find(c => c.id === id));
+
+    // Stale submission — card no longer on board
+    if (cards.some(c => !c)) return;
 
     if (isValidSet(...cards)) {
       player.score += 10;
 
       const boardSizeBefore = room.board.length;
-      const sorted = [i, j, k].sort((a, b) => b - a);
-      sorted.forEach(idx => room.board.splice(idx, 1));
+      room.board = room.board.filter(c => !cardIds.includes(c.id));
       const extra = refillAfterSet(room.deck, room.board, boardSizeBefore);
 
       const hasMoreSets = findAllSets(room.board).length > 0;
@@ -220,18 +221,18 @@ io.on('connection', socket => {
         io.to(room.code).emit('game_over', { players: room.players });
       } else {
         io.to(room.code).emit('set_valid', {
-          indices,
+          removedCardIds: cardIds,
           players: room.players,
           board: room.board,
           deckSize: room.deck.length,
-          boardExpanded: extra  // > 0 means board grew due to no SET at 12
+          boardExpanded: extra
         });
         startHintTimer(room);
       }
     } else {
       if (room.settings.penaltyEnabled) player.score -= 5;
       io.to(room.code).emit('set_invalid', {
-        indices,
+        cardIds,
         players: room.players,
         penaltyApplied: room.settings.penaltyEnabled
       });

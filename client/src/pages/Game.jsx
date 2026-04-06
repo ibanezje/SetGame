@@ -247,7 +247,11 @@ export default function Game({
       {/* ── Bottom action area ── */}
       <div className="game-footer">
         {!claimingPlayerId && (
-          <button className="btn btn-set btn-full btn-large" onClick={onClaimSet}>
+          <button
+            className="btn btn-set btn-full btn-large"
+            onClick={onClaimSet}
+            disabled={notification?.flashIndices?.type === 'valid'}
+          >
             I found a SET!
           </button>
         )}

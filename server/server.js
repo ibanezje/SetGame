@@ -206,8 +206,11 @@ io.on('connection', socket => {
     const player = room.players.find(p => p.id === socket.id);
     const cards = cardIds.map(id => room.board.find(c => c.id === id));
 
-    // Stale submission — card no longer on board
-    if (cards.some(c => !c)) return;
+    // Stale submission — card no longer on board (e.g. submitted during green flash)
+    if (cards.some(c => !c)) {
+      io.to(room.code).emit('claim_cancelled', { playerId: socket.id });
+      return;
+    }
 
     if (isValidSet(...cards)) {
       player.score += 10;

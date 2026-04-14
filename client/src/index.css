@@ -160,6 +160,7 @@ html, body, #root {
 
 .error-msg { color: var(--red); font-size: 13px; margin-bottom: 10px; }
 .home-rules-hint { color: rgba(255,255,255,.55); font-size: 13px; text-align: center; }
+.home-version { color: rgba(255,255,255,.35); font-size: 11px; text-align: center; margin-top: 4px; }
 
 /* ─── LOBBY ─────────────────────────────────────────────────────────────────── */
 .lobby-screen {

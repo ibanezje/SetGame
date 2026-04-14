@@ -23,7 +23,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
   return (
     <div className="lobby-screen">
       <div className="lobby-header">
-        <button className="btn btn-ghost btn-small" onClick={onLeave}>← Leave</button>
+        <button className="btn btn-secondary btn-small" onClick={onLeave}>← Leave</button>
         <h2>Lobby</h2>
         <div />
       </div>

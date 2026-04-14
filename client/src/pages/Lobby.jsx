@@ -14,7 +14,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
   }
 
   const connectedCount = room.players.length;
-  const canStart       = isHost && connectedCount >= 2;
+  const canStart       = isHost && connectedCount >= 1;
 
   const hintLabel = room.settings.hintDelay === 0
     ? 'Off'
@@ -50,9 +50,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
             </li>
           ))}
         </ul>
-        {connectedCount < 2 && (
-          <p className="waiting-msg">Waiting for at least one more player…</p>
-        )}
+
       </div>
 
       {/* Settings */}

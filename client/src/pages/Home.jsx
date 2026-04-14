@@ -97,6 +97,7 @@ export default function Home({ onCreateRoom, onJoinRoom }) {
       </div>
 
       <p className="home-rules-hint">2–4 players · Find SETs before your opponents!</p>
+      <p className="home-version">v{__APP_VERSION__}</p>
     </div>
   );
 }

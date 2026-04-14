@@ -70,7 +70,7 @@ html, body, #root {
 
 .btn-primary  { background: var(--gold); color: #1a1a1a; }
 .btn-secondary { background: #fff; color: var(--bg); border: 2px solid var(--bg); }
-.btn-ghost    { background: rgba(255,255,255,.15); color: #fff; }
+.btn-ghost    { background: rgba(255,255,255,.15); color: #fff; border: 1.5px solid rgba(255,255,255,.5); }
 .btn-set      { background: #e63946; color: #fff; font-size: 18px; letter-spacing: .5px; }
 .btn-full     { width: 100%; }
 .btn-large    { padding: 16px; font-size: 18px; border-radius: 14px; }

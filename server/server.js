@@ -137,8 +137,8 @@ io.on('connection', socket => {
     if (!room) return ack?.({ ok: false, error: 'Room not found.' });
     const player = room.players.find(p => p.id === socket.id);
     if (!player?.isHost) return ack?.({ ok: false, error: 'Not host.' });
-    if (room.players.filter(p => p.connected).length < 2)
-      return ack?.({ ok: false, error: 'Need at least 2 players.' });
+    if (room.players.filter(p => p.connected).length < 1)
+      return ack?.({ ok: false, error: 'Need at least 1 player.' });
 
     room.players.forEach(p => { p.score = 0; });
     room.deck  = createDeck();

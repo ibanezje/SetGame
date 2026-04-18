@@ -324,4 +324,17 @@ io.on('connection', socket => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`SET server listening on :${PORT}`));
+server.listen(PORT, () => {
+  console.log(`SET server listening on :${PORT}`);
+
+  // Keep-alive: hit our own /health endpoint every 10 minutes so that
+  // hosting platforms (e.g. Render free tier) don't spin the process down
+  // while a game is in progress.  The client sends the same ping, but this
+  // belt-and-suspenders version works even when the browser tab is hidden.
+  const KEEP_ALIVE_MS = 10 * 60 * 1000; // 10 minutes
+  setInterval(() => {
+    http.get(`http://localhost:${PORT}/health`, res => {
+      res.resume(); // drain the response so the socket is released
+    }).on('error', () => { /* ignore */ });
+  }, KEEP_ALIVE_MS);
+});

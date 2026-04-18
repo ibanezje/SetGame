@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { socket, emitWithAck } from './socket';
+import { socket, emitWithAck, startKeepAlive, stopKeepAlive } from './socket';
 import Home    from './pages/Home';
 import Lobby   from './pages/Lobby';
 import Game    from './pages/Game';
@@ -41,10 +41,11 @@ export default function App() {
     socket.on('connect', () => {
       setMyId(socket.id);
       setConnError('');
+      startKeepAlive();
     });
     socket.on('connect_error', () => setConnError('Connection lost. Retrying…'));
-    socket.on('disconnect',    () => setConnError('Disconnected. Reconnecting…'));
-    socket.on('reconnect',     () => setConnError(''));
+    socket.on('disconnect',    () => { setConnError('Disconnected. Reconnecting…'); stopKeepAlive(); });
+    socket.on('reconnect',     () => { setConnError(''); startKeepAlive(); });
 
     socket.on('room_updated', (updatedRoom) => {
       setRoom(updatedRoom);
@@ -147,7 +148,7 @@ export default function App() {
       }
     });
 
-    return () => { socket.disconnect(); socket.removeAllListeners(); };
+    return () => { stopKeepAlive(); socket.disconnect(); socket.removeAllListeners(); };
   }, []);
 
   useEffect(() => {

@@ -17,3 +17,23 @@ export function emitWithAck(event, data = {}) {
     });
   });
 }
+
+// ── Keep-alive: ping the server's /health endpoint every 10 minutes so that
+// hosting platforms (e.g. Render free tier) don't spin the process down while
+// a game is in progress.
+const KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+let _keepAliveTimer = null;
+
+export function startKeepAlive() {
+  stopKeepAlive();
+  _keepAliveTimer = setInterval(() => {
+    fetch(`${SERVER_URL}/health`).catch(() => { /* ignore — server unreachable */ });
+  }, KEEP_ALIVE_INTERVAL_MS);
+}
+
+export function stopKeepAlive() {
+  if (_keepAliveTimer !== null) {
+    clearInterval(_keepAliveTimer);
+    _keepAliveTimer = null;
+  }
+}

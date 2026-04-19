@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-export default function Home({ onCreateRoom, onJoinRoom }) {
+export default function Home({ onCreateRoom, onJoinRoom, initialCode }) {
   const [name,    setName]    = useState('');
-  const [code,    setCode]    = useState('');
-  const [tab,     setTab]     = useState('create'); // 'create' | 'join'
+  const [code,    setCode]    = useState(initialCode || '');
+  const [tab,     setTab]     = useState(initialCode ? 'join' : 'create'); // 'create' | 'join'
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 

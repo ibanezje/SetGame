@@ -5,6 +5,17 @@ import Lobby   from './pages/Lobby';
 import Game    from './pages/Game';
 import Results from './pages/Results';
 
+// Read invite code once at module load — before React's double-invocation can wipe it
+const _initialInviteCode = (() => {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  if (code) {
+    window.history.replaceState({}, '', '/');
+    return code.toUpperCase();
+  }
+  return null;
+})();
+
 export default function App() {
   const [screen,        setScreen]        = useState('home');
   const [room,          setRoom]          = useState(null);
@@ -25,14 +36,7 @@ export default function App() {
   }
 
   // ── Pull room code from URL on load ───────────────────────────────────────
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code   = params.get('code');
-    if (code) {
-      sessionStorage.setItem('pendingCode', code.toUpperCase());
-      window.history.replaceState({}, '', '/');
-    }
-  }, []);
+  const [pendingCode] = useState(_initialInviteCode);
 
   // ── Socket connection & events ────────────────────────────────────────────
   useEffect(() => {
@@ -220,7 +224,7 @@ export default function App() {
       {connError && <div className="conn-banner">{connError}</div>}
 
       {screen === 'home' && (
-        <Home onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />
+        <Home onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} initialCode={pendingCode} />
       )}
 
       {screen === 'lobby' && room && (

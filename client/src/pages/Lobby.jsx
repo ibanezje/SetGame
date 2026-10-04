@@ -7,8 +7,32 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
 
   const shareLink = `${(import.meta.env.VITE_PUBLIC_URL || window.location.origin).replace(/\/$/, '')}/?code=${room.code}`;
 
-  function copyCode() {
-    navigator.clipboard.writeText(shareLink).catch(() => navigator.clipboard.writeText(room.code));
+  // execCommand fallback: the Clipboard API is blocked in cross-origin iframes (e.g. itch.io embed)
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { /* ignore */ }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  async function copyCode() {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      ok = true;
+    } catch {
+      ok = legacyCopy(shareLink);
+    }
+    if (!ok) {
+      window.prompt('Copy this invite link:', shareLink);
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

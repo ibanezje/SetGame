@@ -5,7 +5,7 @@ export default function Lobby({ room, myId, onStartGame, onUpdateSettings, onLea
   const isHost = me?.isHost;
   const [copied, setCopied] = useState(false);
 
-  const shareLink = `${window.location.origin}?code=${room.code}`;
+  const shareLink = `${(import.meta.env.VITE_PUBLIC_URL || window.location.origin).replace(/\/$/, '')}/?code=${room.code}`;
 
   function copyCode() {
     navigator.clipboard.writeText(shareLink).catch(() => navigator.clipboard.writeText(room.code));
